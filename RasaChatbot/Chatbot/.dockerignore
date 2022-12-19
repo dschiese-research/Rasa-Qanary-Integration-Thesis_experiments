@@ -1,0 +1,5 @@
+tests/*
+actions/*
+models/*
+./index.html
+**/*.md

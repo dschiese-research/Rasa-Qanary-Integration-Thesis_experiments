@@ -1,0 +1,14 @@
+- story: An unrecognized sentence 3 x greetings
+  steps:
+  - user: |
+      Where do I go to school
+    intent: nlu_fallback
+  - action: utter_default
+
+- story: An unrecognized sentence 3 x greetings
+  steps:
+  - user: |
+      Tell me where to go
+    intent: nlu_fallback
+  - action: utter_default
+

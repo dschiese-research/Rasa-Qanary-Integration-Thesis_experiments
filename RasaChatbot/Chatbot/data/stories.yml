@@ -1,0 +1,45 @@
+version: "3.1"
+
+stories:
+
+- story: greetings
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+- story: Question for someone's birthday
+  steps:
+  - intent: birthdayQuestion
+  - action: action_evaluate_birthday
+
+- story: nlu_fallback with follow up corrected question
+  steps:
+  - intent: nlu_fallback 
+  - action: utter_default
+  - intent: birthdayQuestion
+  - action: action_evaluate_birthday
+
+- story: Fallback_story
+  steps:
+  - intent: nlu_fallback
+  - action: utter_default
+
+- story: full exhange
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: nlu_fallback 
+  - action: utter_default
+  - intent: birthdayQuestion
+  - action: action_evaluate_birthday
+
+- story: long exhange
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: birthdayQuestion
+  - action: action_evaluate_birthday
+  - intent: nlu_fallback 
+  - action: utter_default
+  - intent: birthdayQuestion
+  - action: action_evaluate_birthday
