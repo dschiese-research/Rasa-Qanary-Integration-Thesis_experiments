@@ -1,0 +1,70 @@
+version: '3.5'
+services:
+  qanary-pipeline:
+    image: qanary/qanary-pipeline:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - STARDOG_URL=http://admin:admin@demos.swe.htwk-leipzig.de:40100/
+      - STARDOG_USERNAME=admin
+      - STARDOG_PASSWORD=admin
+      - SERVER_HOST=http://qanary-pipeline
+      - SERVER_PORT=8080
+      - QANARY_PROCESS_ALLOW-ADDITIONAL-TRIPLES=false
+
+  mlflow:
+    build:
+      context: AutomationService/AutomationServiceBackend-wittigannemarie/MLFlow
+      args:
+        MLFLOW_PORT_ARTIFACT: $MLFLOW_PORT_ARTIFACT
+        MLFLOW_USERNAME: $MLFLOW_USERNAME
+        MLFLOW_PASSWORD: $MLFLOW_PASSWORD
+    environment:
+      - MLFLOW_HOST=$MLFLOW_HOST
+      - MLFLOW_PORT=$MLFLOW_PORT
+      - MLFLOW_PORT_ARTIFACT=$MLFLOW_PORT_ARTIFACT
+      - MLFLOW_USERNAME=$MLFLOW_USERNAME
+      - MLFLOW_PASSWORD=$MLFLOW_PASSWORD
+    ports:
+      - "$MLFLOW_PORT:5000"
+      - "$MLFLOW_PORT_ARTIFACT:$MLFLOW_PORT_ARTIFACT"
+    volumes:
+      - artifacts:/home/mlflow
+
+  automation_component:
+    container_name: $SERVICE_NAME_COMPONENT
+    restart: unless-stopped
+    image: automation-component-container
+    build:
+      context: AutomationService/AutomationServiceBackend-wittigannemarie
+      dockerfile: DockerfileQanary
+      args:
+        TRAININGDATA: ${TRAININGDATA}
+        TESTDATA: ${TESTDATA}
+        MODELTYPE: ${MODELTYPE}
+        LANGUAGE: ${MODELLANGUAGE}
+    ports:
+      - $SERVICE_PORT:8081
+    environment:
+      - SPRING_BOOT_ADMIN_URL=$SPRING_BOOT_ADMIN_URL
+      - SPRING_BOOT_ADMIN_USERNAME=$SPRING_BOOT_ADMIN_USERNAME
+      - SPRING_BOOT_ADMIN_PASSWORD=$SPRING_BOOT_ADMIN_PASSWORD
+      - SERVICE_HOST=$SERVICE_HOST
+      - SERVICE_PORT=$SERVICE_PORT
+      - SERVICE_NAME_COMPONENT=$SERVICE_NAME_COMPONENT
+      - SERVICE_DESCRIPTION_COMPONENT=$SERVICE_DESCRIPTION_COMPONENT
+      - PRODUCTION=True
+    command: uvicorn qanarycomponent:app --host 0.0.0.0 --port=8081
+    volumes:
+      - "./AutomationServiceBackend-wittigannemarie:/app"
+    #Remove these if your service has no GPU; adjust if you use a different driver
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+
+volumes:
+  artifacts: {}
