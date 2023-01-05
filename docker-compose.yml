@@ -13,12 +13,7 @@ services:
       - QANARY_PROCESS_ALLOW-ADDITIONAL-TRIPLES=false
 
   mlflow:
-    build:
-      context: AutomationService/AutomationServiceBackend-wittigannemarie/MLFlow
-      args:
-        MLFLOW_PORT_ARTIFACT: $MLFLOW_PORT_ARTIFACT
-        MLFLOW_USERNAME: $MLFLOW_USERNAME
-        MLFLOW_PASSWORD: $MLFLOW_PASSWORD
+    image: qanary/qanary-component-logging-mlflow:latest
     environment:
       - MLFLOW_HOST=$MLFLOW_HOST
       - MLFLOW_PORT=$MLFLOW_PORT
