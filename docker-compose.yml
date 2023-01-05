@@ -29,15 +29,7 @@ services:
   automation_component:
     container_name: $SERVICE_NAME_COMPONENT
     restart: unless-stopped
-    image: automation-component-container
-    build:
-      context: AutomationService/AutomationServiceBackend-wittigannemarie
-      dockerfile: DockerfileQanary
-      args:
-        TRAININGDATA: ${TRAININGDATA}
-        TESTDATA: ${TESTDATA}
-        MODELTYPE: ${MODELTYPE}
-        LANGUAGE: ${MODELLANGUAGE}
+    image: qanary/qanary-component-ner-automl:latest
     ports:
       - $SERVICE_PORT:8081
     environment:
@@ -50,8 +42,6 @@ services:
       - SERVICE_DESCRIPTION_COMPONENT=$SERVICE_DESCRIPTION_COMPONENT
       - PRODUCTION=True
     command: uvicorn qanarycomponent:app --host 0.0.0.0 --port=8081
-    volumes:
-      - "./AutomationServiceBackend-wittigannemarie:/app"
     #Remove these if your service has no GPU; adjust if you use a different driver
     deploy:
       resources:
