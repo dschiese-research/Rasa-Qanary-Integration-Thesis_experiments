@@ -31,7 +31,7 @@ services:
   automation_component:
     container_name: $SERVICE_NAME_COMPONENT
     restart: unless-stopped
-    image: automation-component-container:latest
+    image: qanary/qanary-component-ner-automl:latest
     network_mode: host
     #ports:
     #  - $SERVICE_PORT:8081
@@ -55,7 +55,7 @@ services:
             capabilities: [gpu]
 
   birth-data:
-    image: birthdate:downloaded
+    image: qanary/qanary-component-qb-birthdata-wikidata:latest
     #ports:
     #  - $BIRTH_DATA_WIKIDATA_PORT:5555
     network_mode: host
@@ -82,6 +82,31 @@ services:
       - SPRING_APPLICATION_DESCRIPTION=$SPARQL_EXECUTER_COMPONENT_DESCRIPTION
       - SPRING_BOOT_ADMIN_URL=$SPARQL_EXECUTER_SPRING_BOOT_ADMIN_URL
       - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE-BASE-URL=$SPARQL_EXECUTER_SERVER_HOST:$SPARQL_EXECUTER_PORT
+
+  rasa_server:
+    container_name: "rasa_server"
+    restart: unless-stopped
+    user: root
+    build: 
+      context: Chatbot
+      dockerfile: Dockerfile
+    volumes:
+      - "./Chatbot:/app"
+    network_mode: host
+    #ports: 
+    #  - "5005:5005"
+  action_server:
+    container_name: "action_server"
+    restart: unless-stopped
+    build: 
+      context: Chatbot
+      dockerfile: ./actions/Dockerfile
+    volumes:
+      - "./Chatbot/actions:/app/actions"
+      - "./Chatbot/data:/app/data"
+    network_mode: host
+    #ports:
+    #  - "5055:5055"
 
 volumes:
   artifacts: {}
