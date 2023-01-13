@@ -96,7 +96,7 @@ class ActionEvaluateBirthday(Action):
 
     def build_result_table(self, bindings):
         if len(bindings) == 0:
-            return "\n I could not find any birthdate. If this is not expected, has their name been recognized correct? Try asking a different way and use upper and lower case."
+            return "\n I could not find any birthdate. If this is not expected, has their name been recognized correct? Try asking a different way. I also helps me if you use upper and lower case."
         else:
             table = """
                 <table>
@@ -111,6 +111,8 @@ class ActionEvaluateBirthday(Action):
 
             for binding in bindings:
                 result = self.get_result_from_binding(binding)
+                if len(result) == 0: 
+                    return "\n I could not find any birthdate. If this is not expected, has their name been recognized correct? Try asking a different way. I also helps me if you use upper and lower case."
 
                 for val in result:
                         row = """
@@ -120,11 +122,15 @@ class ActionEvaluateBirthday(Action):
                             <td>BIRTHDATE</td>
                         </tr>
                         """
-                        row = row.replace("PERSON", val['person']['value'])
-                        row = row.replace("BIRTHPLACE", val['birthplace']['value'])
-                        date = val['birthdate']['value']
-                        datetime_object = datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ').date()
-                        row = row.replace("BIRTHDATE", f"{datetime_object}")
+                        if 'person' in val:
+                            row = row.replace("PERSON", val['person']['value'])
+                        if 'birthplace' in val:
+                            row = row.replace("BIRTHPLACE", val['birthplace']['value'])
+                        if 'birthdate' in val:
+                            date = val['birthdate']['value']
+                            datetime_object = datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ').date()
+                            row = row.replace("BIRTHDATE", f"{datetime_object}")
+                        row = row.replace("PERSON", "").replace("BIRTHPLACE", "").replace("BIRTHDATE", "")
                         table = table + "\n" + row
                 
             return prefix + table + "\n</table>"
