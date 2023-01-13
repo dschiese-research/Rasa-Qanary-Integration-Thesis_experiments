@@ -80,7 +80,7 @@ services:
       
   chatbot-ui:
     image: qanary/qanary-ui:latest
-    container_name: chatboit-ui
+    container_name: chatbot-ui
     restart: unless-stopped
     ports:
       - "$CHATBOT_UI_PORT:80"
