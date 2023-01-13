@@ -1,0 +1,53 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - moin
+    - hey there
+    - let's go
+    - hey dude
+    - goodmorning
+    - goodevening
+    - good afternoon
+
+- intent: goodbye
+  examples: |
+    - cu
+    - good by
+    - cee you later
+    - good night
+    - bye
+    - goodbye
+    - have a nice day
+    - see you around
+    - bye bye
+    - see you later
+
+- intent: birthdayQuestion
+  examples: |
+    - When is [John Smith](name) born?
+    - What is the Birthday of [Annemarie](name)?
+    - Birthdate [Beth Aweau](name)
+    - How old is [Olga Kay](name)?
+    - [Staci Perry](name) was born when?
+    - On which day was [Todd Bieber](name) born?
+    - When was [Veronica Hill](name) born.
+    - What is the age of [Emma Green Winston](name)?
+    - Please give me [Hilah](name) Birthday.
+    - Is it [Rachel O'Brian](name) day of birth?
+    - When was [Christopher Lee](name) birthdate?
+    - What is the birthdate of [Angela Merkel](name)?
+
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you a human?
+    - am I talking to a bot?
+    - am I talking to a human?

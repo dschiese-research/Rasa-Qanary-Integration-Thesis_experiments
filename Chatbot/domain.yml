@@ -1,0 +1,35 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - bot_challenge
+  - birthdayQuestion
+
+entities:
+  - name
+
+responses:
+  utter_greet:
+    - text: "Hi. How can I help? I can answer questions like: 'What is the birthdate of <Person>?'"
+    - text: "Hello. I am here to help you. Please ask questions such as 'When was <Person> born?'"
+    - text: "Hello there! You can ask me for birthdays of people if you want!"
+
+  utter_goodbye:
+  - text: "Have a good day! :)"
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
+
+  utter_default:
+  - text: "I apologize, I did not understand your message. You can ask me messages such as 'What is Angela Merkels birthday?'"
+  - text: "Excuse me, but I am unsure what was asked. You can ask me messages such as 'When was Barack Obama born?'"
+  - text: "I don't understand your question. You can ask me questions such as 'Is it Marilyn Monroes day of birth?'"
+  - text: "I apologize for not understanding. I am here to answer questions about birthdays of people!"
+
+actions: 
+  - action_evaluate_birthday
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

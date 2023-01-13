@@ -1,0 +1,36 @@
+- story: An unrecognized sentence 1
+  steps:
+  - user: |
+      Where does alexander perevalov work
+    intent: nlu_fallback
+  - action: utter_default
+
+  - story: An unrecognized sentence 2
+  steps:
+  - user: |
+      Why do you not work? 
+    intent: nlu_fallback
+  - action: utter_default
+
+  - story: An unrecognized sentence 3
+  steps:
+  - user: |
+      kuheui epow ru wpoe iur uwer
+    intent: nlu_fallback
+  - action: utter_default
+
+  - story: An unrecognized sentence 4
+  steps:
+  - user: |
+      Why are you here
+    intent: nlu_fallback
+  - action: utter_default
+
+  - story: An unrecognized sentence 5
+  steps:
+  - user: |
+      why
+    intent: nlu_fallback
+  - action: utter_default
+
+
