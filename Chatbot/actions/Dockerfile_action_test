@@ -1,0 +1,17 @@
+FROM python:3.8-slim-buster
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        software-properties-common \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        iproute2 \
+        python3-pip \
+        bash \
+        wget \
+        curl \
+    && :
+
+RUN python3.8 -m venv /venv
+RUN python3 -m pip install rasa SPARQLWrapper
+WORKDIR /actions
+USER 1000

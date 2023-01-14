@@ -1,6 +1,6 @@
 FROM python:3.8-slim
 
-RUN python3.8 -m pip install rasa
+RUN python3.8 -m pip install rasa SPARQLWrapper
 
 WORKDIR /app
 COPY . .

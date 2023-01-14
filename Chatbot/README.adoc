@@ -1,0 +1,53 @@
+:toc:
+:toclevels: 5
+:toc-placement!:
+:source-highlighter: highlight.js
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+:source-highlighter: coderay
+endif::[]
+
+# Rasa Chatbot Backend Service
+
+Please recognize the link:../README.adoc[big picture of this project].
+
+toc::[]
+
+## Purpose
+
+The purpose of the Rasa service is to provide a chatbot backend service for the https://github.com/WDAqua/Qanary-Chatbot-UI[Chatbot UI].
+It is connected to a link:./action/[custom Rasa action] which will interact with a Qanary pipeline to answer specific knowledge graph questions.
+
+The configuration is done using the standard configuration files of Rasa:
+
+- link:config.yml[config.yml]
+- link:domain.yml[domain.yml]
+- link:data/nlu.yml[data/nlu.yml]
+- link:data/stories.yml[data/stories.yml]
+- link:data/rules.yml[data/rules.yml]
+
+## Interaction with the Rasa Server using the REST API
+
+The Rasa server can be addressed directly by sending POST requests to http://localhost:5005/webhooks/rest/webhook (if you use the predefined settings of this project).
+A JSON body is expected. 
+It follows the struture:
+
+```JSON
+{
+    "sender" : "{SENDER}", 
+    "message": "{MESSAGE TEXT}"
+}
+```
+It returns a JSON message.
+
+ 
+An example for a request using the curl command would be:
+
+```shell
+curl -X POST -H "Content-Type: application/json" -d '{"sender" : "sender", "message": "When was Albert Einstein born?"}' http://localhost:5005/webhooks/rest/webhook
+```
+

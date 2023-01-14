@@ -1,0 +1,126 @@
+version: '3.5'
+services:
+  qanary-pipeline:
+    image: qanary/qanary-pipeline:latest
+    network_mode: host
+    #ports:
+    #  - "8080:8080"
+    environment:
+      - STARDOG_URL=http://admin:admin@demos.swe.htwk-leipzig.de:40100/
+      - STARDOG_USERNAME=admin
+      - STARDOG_PASSWORD=admin
+      - SERVER_HOST=http://localhost
+      - SERVER_PORT=8080
+      - QANARY_PROCESS_ALLOW-ADDITIONAL-TRIPLES=false
+
+  mlflow:
+    image: qanary/qanary-component-logging-mlflow:latest
+    network_mode: host
+    environment:
+      - MLFLOW_HOST=$MLFLOW_HOST
+      - MLFLOW_PORT=$MLFLOW_PORT
+      - MLFLOW_PORT_ARTIFACT=$MLFLOW_PORT_ARTIFACT
+      - MLFLOW_USERNAME=$MLFLOW_USERNAME
+      - MLFLOW_PASSWORD=$MLFLOW_PASSWORD
+    #ports:
+    #  - "$MLFLOW_PORT:5000"
+    #  - "$MLFLOW_PORT_ARTIFACT:$MLFLOW_PORT_ARTIFACT"
+    volumes:
+      - artifacts:/home/mlflow
+
+  automation_component:
+    container_name: $SERVICE_NAME_COMPONENT
+    restart: unless-stopped
+    image: qanary/qanary-component-ner-automl:latest
+    network_mode: host
+    #ports:
+    #  - $SERVICE_PORT:8081
+    environment:
+      - SPRING_BOOT_ADMIN_URL=$SPRING_BOOT_ADMIN_URL
+      - SPRING_BOOT_ADMIN_USERNAME=$SPRING_BOOT_ADMIN_USERNAME
+      - SPRING_BOOT_ADMIN_PASSWORD=$SPRING_BOOT_ADMIN_PASSWORD
+      - SERVICE_HOST=$SERVICE_HOST
+      - SERVICE_PORT=$SERVICE_PORT
+      - SERVICE_NAME_COMPONENT=$SERVICE_NAME_COMPONENT
+      - SERVICE_DESCRIPTION_COMPONENT=$SERVICE_DESCRIPTION_COMPONENT
+      - PRODUCTION=True
+    command: uvicorn qanarycomponent:app --host 0.0.0.0 --port=8081
+    #Remove these if your service has no GPU; adjust if you use a different driver
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #      - driver: nvidia
+    #        count: 1
+    #        capabilities: [gpu]
+
+  birth-data:
+    image: qanary/qanary-component-qb-birthdata-wikidata:latest
+    #ports:
+    #  - $BIRTH_DATA_WIKIDATA_PORT:5555
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - SERVER_HOST=$BIRTH_DATA_WIKIDATA_SERVER_HOST
+      - SERVER_PORT=$BIRTH_DATA_WIKIDATA_PORT
+      - SPRING_APPLICATION_NAME=$BIRTH_DATA_WIKIDATA_COMPONENT_NAME
+      - SPRING_APPLICATION_DESCRIPTION=$BIRTH_DATA_WIKIDATA_COMPONENT_DESCRIPTION
+      - SPRING_BOOT_ADMIN_URL=$BIRTH_DATA_WIKIDATA_SPRING_BOOT_ADMIN_URL
+      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE-BASE-URL=$BIRTH_DATA_WIKIDATA_SERVER_HOST:$BIRTH_DATA_WIKIDATA_PORT
+
+  sparql-executer:
+    image: qanary/qanary-component-qe-sparqlexecuter:latest
+    container_name: $SPARQL_EXECUTER_COMPONENT_NAME
+    network_mode: host
+    #ports:
+    #  - $SPARQL_EXECUTER_PORT:10010
+    restart: unless-stopped
+    environment:
+      - SERVER_HOST=$SPARQL_EXECUTER_SERVER_HOST
+      - SERVER_PORT=$SPARQL_EXECUTER_PORT
+      - SPRING_APPLICATION_NAME=$SPARQL_EXECUTER_COMPONENT_NAME
+      - SPRING_APPLICATION_DESCRIPTION=$SPARQL_EXECUTER_COMPONENT_DESCRIPTION
+      - SPRING_BOOT_ADMIN_URL=$SPARQL_EXECUTER_SPRING_BOOT_ADMIN_URL
+      - SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE-BASE-URL=$SPARQL_EXECUTER_SERVER_HOST:$SPARQL_EXECUTER_PORT
+      
+  chatbot-ui:
+    image: qanary/qanary-ui:latest
+    container_name: chatbot-ui
+    restart: unless-stopped
+    ports:
+      - "$CHATBOT_UI_PORT:80"
+    environment:
+      - DEFAULT_LANGUAGE="$CHATBOT_UI_DEFAULT_LANGUAGE"
+      - CHATBOT_FRONTEND_URL="$CHATBOT_UI_FRONTEND_URL"
+      - DEFAULT_CHATBOT_BACKEND_URL="$CHATBOT_UI_DEFAULT_BACKEND_URL"
+      - DEFAULT_CHATBOT_COMPONENTS=$CHATBOT_UI_DEFAULT_COMPONENTS
+      - INITIAL_QUESTION_PARAMETER_NAME="$CHATBOT_UI_INITIAL_QUESTION_PARAMETER_NAME"
+      - DEFAULT_BACKEND_TYPE="$CHATBOT_UI_DEFAULT_BACKEND_TYPE"
+
+  rasa_server:
+    container_name: "rasa_server"
+    restart: unless-stopped
+    user: root
+    build: 
+      context: Chatbot
+      dockerfile: Dockerfile
+    volumes:
+      - "./Chatbot:/app"
+    network_mode: host
+    #ports: 
+    #  - "5005:5005"
+  action_server:
+    container_name: "action_server"
+    restart: unless-stopped
+    build: 
+      context: Chatbot
+      dockerfile: ./actions/Dockerfile
+    volumes:
+      - "./Chatbot/actions:/app/actions"
+      - "./Chatbot/data:/app/data"
+    network_mode: host
+    #ports:
+    #  - "5055:5055"
+
+volumes:
+  artifacts: {}

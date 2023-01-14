@@ -1,7 +1,9 @@
 from typing import Any, Text, Dict, List
 import requests
 import json
+import os
 from datetime import datetime
+from SPARQLWrapper import SPARQLWrapper, JSON, POST
 
 #
 from rasa_sdk import Action, Tracker
@@ -11,37 +13,47 @@ from rasa_sdk.executor import CollectingDispatcher
 class ActionValues():
 
     @staticmethod
-    def get_messagetext (tracker: Tracker):
+    def get_messagetext(tracker: Tracker):
         return {
             'text': tracker.latest_message['text']
         }
 
+
 class ActionEvaluateBirthday(Action):
-    
-    sparql_url = "http://admin:admin@demos.swe.htwk-leipzig.de:40100/qanary/query"
-    qanary_pipeline= "http://localhost:8080"
+
+    sparql_url = "http://localhost:8080/sparql"
+    qanary_pipeline = "http://localhost:8080"
+    warning_no_birthdate_found = """<div class="no_result_found">I could not find any birthdate. If this is not expected, has their name been recognized correct? Try asking a different way. I also helps me if you use upper and lower case.</div>"""
+
+    def __init__(self):
+        try:
+            hostip = os.getenv('QANARY_IP')
+            if hostip is not None and hostip != "":
+                self.sparql_url = "http://" + hostip + ":8080/sparql"
+                self.qanary_pipeline = "http://" + hostip + ":8080"
+        except Exception as e:
+            pass
+        print("use endpoints: {}, {} ".format(
+            self.sparql_url, self.qanary_pipeline))
 
     def name(self) -> Text:
         return "action_evaluate_birthday"
 
     def start_sparql_request(self, payload):
-        headers = {
-        'Content-Type': 'application/sparql-query',
-        'Accept': 'application/sparql-results+json'
-        }
-
         try:
-            response = requests.request("POST", self.sparql_url, headers=headers, data=payload)
-            jsonobj = json.loads(response.text)
-            result = jsonobj ["results"]["bindings"]     
+            sparql = SPARQLWrapper(self.sparql_url)
+            sparql.setQuery(payload)
+            sparql.setReturnFormat(JSON)
+            jsonobj = sparql.query().convert()
+            result = jsonobj["results"]["bindings"]
             return result
         except Exception as e:
-            return "I could not interact with Stardog due to the error " + type(e).__name__
+            return "I could not interact with Qanary triplestore at " + self.sparql_url + " due to the error " + type(e).__name__
 
     def get_result_from_binding(self, binding):
         result_text = binding["json"]["value"].replace("\\", "")
         result_json = json.loads(result_text)
-        result = result_json ["results"]["bindings"]
+        result = result_json["results"]["bindings"]
         return result
 
     def get_recognition_table_row(self):
@@ -52,12 +64,13 @@ class ActionEvaluateBirthday(Action):
                     <td>LAST_NAME</td>
                 </tr>
                 """
+
     def finish_recognition_row(self, row):
         return row.replace("FIRST_NAME", "").replace("MIDDLE_NAME", "").replace("LAST_NAME", "")
 
     def build_recognition_table(self, input, bindings):
         if len(bindings) == 0:
-            return "\n I did not recognize any person. If this is not expected, try asking a different way and use upper and lower case."
+            return self.warning_no_birthdate_found
         else:
             prefix = "I have recognized the following entities (only First and Last Name are used for the birthdate):"
             table = """
@@ -84,19 +97,54 @@ class ActionEvaluateBirthday(Action):
                 row = self.finish_recognition_row(row)
                 table = table + "\n" + row
 
-            return prefix + table + "\n</table>"
+            table = table + "\n</table>"
+
+            return prefix + table
 
     def retrieve_recognition_values_from_graph_and_build_answers(self, input, graph_id):
-        payload = "PREFIX  qa:   <http://www.wdaqua.eu/qa#>\nPREFIX  oa:   <http://www.w3.org/ns/openannotation/core/>\nPREFIX  dbr:  <http://dbpedia.org/resource/>\nPREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\nSELECT ?resource ?start ?end\nWHERE\n  { GRAPH <" + graph_id + ">\n      { ?annotation  oa:hasBody   ?resource ;\n                  qa:score        ?annotationScore ;\n                  oa:hasTarget    ?target .\n        ?target   oa:hasSource    ?source ;\n                  oa:hasSelector  ?textSelector .\n        ?textSelector\n                  rdf:type        oa:TextPositionSelector ;\n                  oa:start        ?start ;\n                  oa:end          ?end\n      }\n  }\nORDER BY ?start"
+        payload = """
+            PREFIX  qa:   <http://www.wdaqua.eu/qa#>
+            PREFIX  oa:   <http://www.w3.org/ns/openannotation/core/>
+            PREFIX  dbr:  <http://dbpedia.org/resource/>
+            PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            SELECT ?resource ?start ?end
+            WHERE  { 
+                GRAPH <""" + graph_id + """> { 
+                    ?annotation oa:hasBody ?resource ;
+                                qa:score ?annotationScore ;
+                                oa:hasTarget ?target .
+                    ?target oa:hasSource ?source ;
+                            oa:hasSelector  ?textSelector .
+                    ?textSelector   rdf:type oa:TextPositionSelector ;
+                                    oa:start ?start ;
+                                    oa:end ?end .
+                }
+            }
+            ORDER BY ?start 
+            """
         bindings = self.start_sparql_request(payload)
         if isinstance(bindings, str):
             return bindings
         else:
             return self.build_recognition_table(input, bindings)
 
+    def build_result_text_from_val(self, val, key):
+        """
+            Builds the text for the result from the value and the key if a label is available then it is embedded in the result
+        """
+        if key in val:
+            if key + 'Label' in val and val[key + 'Label']['value'] != "":
+                # return label with link
+                return "<a href=\"{}\">{}</a>".format(val[key]['value'], val[key + 'Label']['value'])
+            else:
+                # return text only
+                return val[key]['value']
+        else:
+            return ""
+
     def build_result_table(self, bindings):
         if len(bindings) == 0:
-            return "\n I could not find any birthdate. If this is not expected, has their name been recognized correct? Try asking a different way. I also helps me if you use upper and lower case."
+            return self.warning_no_birthdate_found
         else:
             table = """
                 <table>
@@ -106,42 +154,51 @@ class ActionEvaluateBirthday(Action):
                         <th>Birthdate</th>
                     </tr>
                 """
-            
+
             prefix = "I have found the following persons and birthdates: \n"
 
             for binding in bindings:
                 result = self.get_result_from_binding(binding)
-                if len(result) == 0: 
-                    return "\n I could not find any birthdate. If this is not expected, has their name been recognized correct? Try asking a different way. I also helps me if you use upper and lower case."
+                if len(result) == 0:
+                    return self.warning_no_birthdate_found
 
                 for val in result:
-                        row = """
+                    row = """
                         <tr>
-                            <td>PERSON</td>
-                            <td>BIRTHPLACE</td>
-                            <td>BIRTHDATE</td>
+                            <td>{}</td>
+                            <td>{}</td>
+                            <td>{}</td>
                         </tr>
-                        """
-                        if 'person' in val:
-                            row = row.replace("PERSON", val['person']['value'])
-                        if 'birthplace' in val:
-                            row = row.replace("BIRTHPLACE", val['birthplace']['value'])
-                        if 'birthdate' in val:
-                            date = val['birthdate']['value']
-                            datetime_object = datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ').date()
-                            row = row.replace("BIRTHDATE", f"{datetime_object}")
-                        row = row.replace("PERSON", "").replace("BIRTHPLACE", "").replace("BIRTHDATE", "")
-                        table = table + "\n" + row
-                
-            return prefix + table + "\n</table>"
+                        """.format(
+                        self.build_result_text_from_val(val, 'person'),
+                        self.build_result_text_from_val(val, 'birthplace'),
+                        self.build_result_text_from_val(val, 'birthdate')
+                    )
+                    table = table + "\n" + row
+
+            table = table + "\n</table>"
+
+            return prefix + table
 
     def retrieve_birthdate_values_from_graph_and_build_answers(self, graph_id):
-        payload = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX oa: <http://www.w3.org/ns/openannotation/core/>\nPREFIX qa: <http://www.wdaqua.eu/qa#>\nSELECT * \nFROM <GRAPHID>\nWHERE {\n    ?annotationId rdf:type qa:AnnotationOfAnswerJson.\n    ?annotationId oa:hasBody ?body.\n  \t?body rdf:type qa:AnswerJson.\n    ?body rdf:value ?json.\n}\n".replace("GRAPHID", graph_id)
+        payload = """
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX oa: <http://www.w3.org/ns/openannotation/core/>
+            PREFIX qa: <http://www.wdaqua.eu/qa#>
+            SELECT * 
+            FROM <GRAPHID>
+            WHERE {
+                ?annotationId rdf:type qa:AnnotationOfAnswerJson.
+                ?annotationId oa:hasBody ?body.
+                ?body rdf:type qa:AnswerJson.
+                ?body rdf:value ?json.
+            }
+            """.replace("<GRAPHID>", "<" + graph_id + ">")
 
         result = self.start_sparql_request(payload)
 
         if isinstance(result, str):
-            return result  
+            return result
 
         table = self.build_result_table(result)
 
@@ -150,30 +207,39 @@ class ActionEvaluateBirthday(Action):
 
     def run_pipeline_query(self, text):
         try:
-            pipeline_request_url = self.qanary_pipeline + "/questionanswering?textquestion=" + text + "&language=en&componentlist%5B%5D=AutomationServiceComponent, BirthDataQueryBuilder, SparqlExecuterComponent"
+            pipeline_request_url = self.qanary_pipeline + "/questionanswering?textquestion=" + text + \
+                "&language=en&componentlist%5B%5D=AutomationServiceComponent, BirthDataQueryBuilderWikidata, SparqlExecuterComponent"
             response = requests.request("POST", pipeline_request_url)
             response_json = json.loads(response.text)
             return response_json["inGraph"]
         except Exception as e:
-            return "Could not interact with Qanary due to the error: " + type(e).__name__
+            return "Could not interact with Qanary system at " + self.qanary_pipeline + " due to the error: " + type(e).__name__
 
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
 
-        
         text = tracker.latest_message['text']
         graph_id = self.run_pipeline_query(text)
 
+        answer = self.retrieve_answer(text, graph_id)
+
+        dispatcher.utter_message(text=answer)
+
+        return []
+
+    def retrieve_answer(self, text, graph_id):
+
         if 'urn' in graph_id:
-            answer = self.retrieve_recognition_values_from_graph_and_build_answers(text, graph_id)
-            answer = answer + "\n" + self.retrieve_birthdate_values_from_graph_and_build_answers(graph_id)
-        else: 
+            answer = self.retrieve_recognition_values_from_graph_and_build_answers(
+                text, graph_id)
+            answer = answer + "\n" + \
+                self.retrieve_birthdate_values_from_graph_and_build_answers(
+                    graph_id)
+        else:
             answer = graph_id
 
         while("  " in answer):
             answer = answer.replace("  ", "")
-        
-        dispatcher.utter_message(text=answer)
 
-        return []
+        return answer

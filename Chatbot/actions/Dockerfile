@@ -1,5 +1,7 @@
 # Extend the official Rasa SDK image
 FROM rasa/rasa-sdk:3.2.0
+USER root
+RUN python3 -m pip install SPARQLWrapper
 
 # Use subdirectory as working directory
 WORKDIR /app

@@ -1,0 +1,120 @@
+:toc:
+:toclevels: 5
+:toc-placement!:
+:source-highlighter: highlight.js
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+:source-highlighter: coderay
+endif::[]
+
+# Custom Rasa Action to fetch birthdata from a Qanary system
+
+Please recognize the link:../../README.adoc[big picture of this project].
+
+toc::[]
+
+## Purpose
+
+In this folder a custom Rasa action is implemented which fetches birthdata from a Qanary system.
+The custom Rasa action is implemented in the file link:./actions.py[`actions.py`].
+It can be tested in the file link:./actions_test.py?display=source#L115-L155[`actions_test.py`] (see link:#_test_the_rasa_action[below]).
+
+For computing the results the following Qanary components are used (as defined link:./actions.py?display=source#L208-L216[here]):
+
+. AutomationServiceComponent
+. BirthDataQueryBuilderWikidata
+. SparqlExecuterComponent
+
+The custom Rasa action is implemented as a class link:./actions.py[`BirthDataAction`] which inherits from the class `Action` of the Rasa framework.
+The action returns HTML code that should contain the birthdata of the recognized person(s) visualized in a table.
+
+
+## Test the Rasa Action
+
+### Test the Rasa Action directly
+
+The test file is a standard Python unittest. 
+Hence, you can start it directly from the command line.
+
+[source,shell]
+----
+python -m unittest -v actions_test.py
+----
+
+WARNING: Make sure that your Qanary system is running and the environment variable `QANARY_IP` is set correctly and the Qanary system has started completely.
+
+
+### Test the Rasa Action in a Docker container
+
+
+This document describes how to test a Rasa action using a Docker container.
+Following this approach fast testing of your custom action is possible without the need to (re-)start the Rasa server.
+Unit tests are executed in a Docker container and the Rasa action is executed in a Docker container.
+All tests are stored in the file link:./actions_test.py[`actions_test.py`].
+
+
+#### Preparation: Build Docker image
+
+[source,shell]
+----
+docker build -f Dockerfile_action_test -t "rasa-action-test:latest" .
+----
+
+WARNING: This might take some time while building the image for the first time, because the Docker image is build from scratch where installing Rasa and Tensorflow might take some time.
+
+#### Execute test
+
+Now, the Docker container can be started and the test can be executed.
+To map the current directory to the Docker container the option `--mount` is used.
+Here, the current directory is mapped to the directory `/actions` in the Docker container.
+
+[source,shell]
+----
+docker run --rm -it --mount src=$(pwd),target=/actions,type=bind rasa-action-test:latest bash
+----
+
+WARNING: From inside the Docker container external network connections are not possible directly.
+
+The environment variable `QANARY_IP` needs to be set to the IP address of the machine where the corresponding Qanary system is running, s.t., the Rasa action can fetch the expected data.
+
+##### Manually set environment variable inside of the Docker container
+
+You can always set manually the environment variable `QANARY_IP` inside of the Docker container.
+
+[source,shell]
+----
+export QANARY_IP=...
+----
+
+##### Automatically set environment variable inside of the Docker container to the host machine
+
+If you want to set the environment variable `QANARY_IP` automatically to the IP address of the host machine, you can use the following command.
+This is very useful if you are running the Qanary system on the same machine as the test. 
+
+[source,shell]
+----
+export QANARY_IP=$(ip route show | awk '/default/ {print $3}')
+----
+
+#### Execute the unit test
+
+WARNING: Make sure that your Qanary system is running and the environment variable `QANARY_IP` is set correctly and the Qanary system has started completely.
+
+[source,shell]
+----
+python -m unittest -v actions_test.py
+----
+
+
+##### Run test of action in Docker container as a single command
+
+The following command executes the test in a Docker container and sets the environment variable `QANARY_IP` to the IP address of the host machine (i.e., this only works if you are running the Qanary system on the same machine).
+
+[source,shell]
+----
+docker run --rm -it --mount src=$(pwd),target=/actions,type=bind rasa-action-test:latest bash -c "export QANARY_IP=\$(ip route show | awk '/default/ {print \$3}') ; python -m unittest -v actions_test.py"
+----
