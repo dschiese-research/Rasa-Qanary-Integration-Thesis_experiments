@@ -31,7 +31,7 @@ services:
   automation_component:
     container_name: $SERVICE_NAME_COMPONENT
     restart: unless-stopped
-    image: qanary/qanary-component-ner-automl:latest
+    image: qanary/qanary-component-ner-automl-pretrained-name:0.1.0
     network_mode: host
     #ports:
     #  - $SERVICE_PORT:8081
