@@ -13,8 +13,8 @@ endif::[]
 
 # Integration Example of a Rasa Chatbot and a Qanary Question Answering System
 
-The only purpose of this repository is to provide a complete example of the integration of an integrated generic Chatbot UI, a Rasa chatbot, and a Qanary-driven question answering system (please recognize that the actual quality of the system is not in the focus).
-The integration is done using a link:./Chatbot/actions[Rasa custom action] handing over the intended questions to the Qanary question answering system.
+The sole purpose of this repository is to provide a complete example of the integration of an integrated _generic chatbot UI_, a _Rasa chatbot_, and a _Qanary-driven question answering system_ (please recognize that the actual quality of the system is not in the focus).
+The integration is done using a link:./Chatbot/actions[Rasa custom action] that passes the intended questions to the Qanary question answering system.
 As a frontend, we use here a https://github.com/WDAqua/Qanary-Chatbot-UI[generic chatbot UI]. 
 However, there are no specific requirements for the frontend.
 Hence, you might use any other Rasa-compatible frontend (e.g., https://rasa.com/docs/rasa/connectors/your-own-website[a custom chatbot UI]) as well.
