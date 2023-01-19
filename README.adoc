@@ -72,7 +72,7 @@ graph TD
     subgraph Qanary[Qanary question answering framework]
         direction TB
         QanarySystem[<b>Qanary System</b><br>orchestrates the connected Qanary components as demanded by the Rasa custom action]
-        AutomationServiceComponent["<b>AutomationServiceComponent<br>(Qanary component)</b><br>identifies names of persons in<br> a given question using a <br> pre-trained model"]
+        AutomationServiceComponent["<b>AutomationServiceComponent<br>(Qanary component)</b><br>identifies names of persons in<br> a given question using a pre-trained<br> model (simple one, but functional)"]
         BirthDataQueryBuilderWikidata["<b>BirthDataQueryBuilderWikidata<br>(Qanary component)</b><br>using the identified names,<br> it creates a SPARQL query that can<br> be used to fetch the requested<br> data from Wikidata"]
         SparqlExecuterComponent["<b>SparqlExecuterComponent<br>(Qanary component)</b><br>executes the previously<br> computed SPARQL query on<br> Wikidata to fetch the<br> requested data"]
     end
@@ -126,14 +126,16 @@ WARNING: The first time you start the system, it takes a while to download all r
 
 ### Troubleshooting: no gpu support
 
-GPU support is enabled by default in the docker-compose file as it is useful for speeding up the training process of the link:#_components_of_the_architecture[AutomationServiceComponent].
-If you get the following error message, you need to remove the GPU support from the docker-compose file.
+GPU support is enabled by default in the file link:./docker-compose.yml[`docker-compose.yml`] as it is useful for speeding up the training process of the link:#_components_of_the_architecture[AutomationServiceComponent].
+If you get the following error message, you need to upgrade your Docker version or remove the GPU support from the docker-compose file.
 
 ----
 ERROR: for automation_component  device_requests param is not supported in API versions < 1.40
 ----
 
-We provide a docker-compose file without requested GPU support at link:./docker-compose-nogpu.yml[docker-compose-nogpu.yml].
+Please see https://github.com/WSE-research/Qanary-NER-automl-component/blob/main/README.adoc#possible-errors for specific troubleshooting details.
+
+Additionally, we provide a docker-compose file without requested GPU support at link:./docker-compose-nogpu.yml[`docker-compose-nogpu.yml`].
 To start the system without GPU support, use the following commands.
 
 [source,shell]
