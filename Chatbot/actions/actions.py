@@ -21,8 +21,8 @@ class ActionValues():
 
 class ActionEvaluateBirthday(Action):
 
-    sparql_url = "http://localhost:8080/sparql"
-    qanary_pipeline = "http://localhost:8080"
+    sparql_url = f"http://{os.environ['SPARQL_IP']}:8080/sparql"
+    qanary_pipeline = f"http://{os.environ['QANARY_IP']}:8080"
     warning_no_birthdate_found = """<div class="no_result_found">I could not find any birthdate. If this is not expected, has their name been recognized correct? Try asking a different way. I also helps me if you use upper and lower case.</div>"""
 
     def __init__(self):
