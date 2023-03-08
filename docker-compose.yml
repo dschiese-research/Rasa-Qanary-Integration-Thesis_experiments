@@ -36,7 +36,7 @@ services:
     image: qanary/qanary-component-ner-automl-pretrained-name:0.1.0
     #network_mode: host
     ports:
-      - $SERVICE_PORT:8081
+      - $SERVICE_PORT:$SERVICE_PORT
     environment:
       - HOST_IP=$HOST_IP
       - SPRING_BOOT_ADMIN_URL=$SPRING_BOOT_ADMIN_URL
@@ -60,7 +60,7 @@ services:
   birth-data:
     image: qanary/qanary-component-qb-birthdata-wikidata:latest
     ports:
-      - $BIRTH_DATA_WIKIDATA_PORT:5555
+      - $BIRTH_DATA_WIKIDATA_PORT:$BIRTH_DATA_WIKIDATA_PORT
     #network_mode: host
     restart: unless-stopped
     environment:
@@ -77,7 +77,7 @@ services:
     container_name: $SPARQL_EXECUTER_COMPONENT_NAME
     #network_mode: host
     ports:
-      - $SPARQL_EXECUTER_PORT:10010
+      - $SPARQL_EXECUTER_PORT:$SPARQL_EXECUTER_PORT
     restart: unless-stopped
     environment:
       - HOST_IP=$HOST_IP
